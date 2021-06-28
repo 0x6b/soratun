@@ -25,7 +25,9 @@ Usage:
 Available Commands:
   bootstrap   Create virtual SIM and configure soratun
   config      Create initial soratun configuration file without bootstrapping
+  curl        Send a data to SORACOM platform via HTTP over SORACOM Arc
   help        Help about any command
+  nc          Send a data to SORACOM platform via TCP/UDP over SORACOM Arc
   status      Display SORACOM Arc interface status
   up          Setup SORACOM Arc interface
   version     Show version
