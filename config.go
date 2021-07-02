@@ -4,10 +4,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"net"
 	"strconv"
-
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+	"strings"
 )
 
 const arcServerEndpointDefaultPort string = "11010"
@@ -177,4 +177,53 @@ func (a *ArcSession) MarshalJSON() ([]byte, error) {
 	tmp.ArcClientPeerIpAddress = a.ArcClientPeerIpAddress
 	tmp.ArcAllowedIPs = a.ArcAllowedIPs
 	return json.Marshal(&tmp)
+}
+
+// String converts Config struct as WireGuard configuration format.
+func (c *Config) String() string {
+	var ips []string
+	for _, ip := range c.ArcSession.ArcAllowedIPs {
+		ips = append(ips, (*net.IPNet)(ip).String())
+	}
+
+	postUp := ""
+	postDown := ""
+	if len(c.PostUp) > 0 {
+		for _, com := range c.PostUp {
+			if len(com) == 0 || com[0] == "" {
+				continue
+			}
+			postUp = fmt.Sprintf("%sPostUp = %s\n", postUp, strings.Join(com, " "))
+		}
+	}
+	if len(c.PostDown) > 0 {
+		for _, com := range c.PostDown {
+			if len(com) == 0 || com[0] == "" {
+				continue
+			}
+			postDown = fmt.Sprintf("%sPostDown = %s\n", postDown, strings.Join(com, " "))
+		}
+	}
+
+	return fmt.Sprintf(`[Interface]
+Address = %s/32
+PrivateKey = %s
+MTU = %d
+%s%s
+[Peer]
+PublicKey = %s
+AllowedIPs = %s
+Endpoint = %s:%d
+PersistentKeepalive = %d`,
+		c.ArcSession.ArcClientPeerIpAddress,
+		c.PrivateKey,
+		c.Mtu,
+		postUp,
+		postDown,
+		c.ArcSession.ArcServerPeerPublicKey,
+		strings.Join(ips, ", "),
+		c.ArcSession.ArcServerEndpoint.IP,
+		c.ArcSession.ArcServerEndpoint.Port,
+		c.PersistentKeepalive,
+	)
 }
