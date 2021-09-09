@@ -1,5 +1,6 @@
 GO=go
 BIN=soratun
+BIN_SORAPROXY=soraproxy
 SRC=$(shell find . -type f -name '*.go')
 TEST_CONTAINER_NAME=soratun-test
 TEST_CONTAINER_RESOURCE=$(TEST_CONTAINER_NAME):latest
@@ -10,6 +11,9 @@ check-ci: fmt-check test vet
 
 $(BIN): $(SRC) go.mod
 	CGO_ENABLED=0 $(GO) build -ldflags='-s -w -X "github.com/soracom/soratun/internal.Revision=$(shell git rev-parse HEAD)" -X "github.com/soracom/soratun/internal.Version=$(shell git describe --tags $$(git rev-list --tags --max-count=1))"' -trimpath ./cmd/soratun
+
+$(BIN_SORAPROXY): $(SRC) go.mod
+	CGO_ENABLED=0 $(GO) build -ldflags='-s -w -X "github.com/soracom/soratun/internal.Revision=$(shell git rev-parse HEAD)" -X "github.com/soracom/soratun/internal.Version=$(shell git describe --tags $$(git rev-list --tags --max-count=1))"' -trimpath ./cmd/soraproxy
 
 snapshot: json-schema-docs
 	which goreleaser && goreleaser --snapshot --skip-publish --rm-dist
@@ -92,5 +96,7 @@ endif
 test-docker-container-push: github-docker-login
 	docker push ghcr.io/soracom/soratun/$(TEST_CONTAINER_RESOURCE)
 
-.PHONY: clean integration-test-container clean-integration-test-container run-integration-test-container json-schema-docs install-dev-deps lint test check check-ci vet fmt fmt-check github-docker-login test-docker-container test-docker-push
+lambda-extension: snapshot
+	aws-lambda-extension/scripts/build.sh
 
+.PHONY: clean integration-test-container clean-integration-test-container run-integration-test-container json-schema-docs install-dev-deps lint test check check-ci vet fmt fmt-check github-docker-login test-docker-container test-docker-push lambda-extension
