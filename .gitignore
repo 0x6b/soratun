@@ -6,4 +6,4 @@ dist
 arc*conf
 arc*json
 /vendor/
-
+*.zip
